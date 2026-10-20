@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.app.animation.Interpolators
 import com.android.app.displaylib.PerDisplayRepository
 import com.android.compose.theme.PlatformTheme
+import com.android.internal.policy.SystemBarUtils
 import com.android.keyguard.AlphaOptimizedLinearLayout
 import com.android.systemui.Dumpable
 import com.android.systemui.Flags.notificationShadeBlur
@@ -531,6 +532,18 @@ constructor(
                 header.paddingStart,
                 if (view.isLayoutRtl) cutoutLeft else cutoutRight,
                 header.paddingEnd,
+            )
+        // Center the top row on the status bar of the display the shade is on. The guideline
+        // is only read from resources on inflation, which goes stale when the shade moves to a
+        // display with a different status bar height.
+        changes +=
+            ConstraintsChanges(
+                qqsConstraintsChanges = {
+                    setGuidelineBegin(
+                        R.id.qqs_header_bottom_guideline,
+                        SystemBarUtils.getStatusBarHeight(context),
+                    )
+                }
             )
 
         if (cutout != null) {
