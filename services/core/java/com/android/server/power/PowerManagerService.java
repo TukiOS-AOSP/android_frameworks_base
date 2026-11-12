@@ -870,6 +870,8 @@ public final class PowerManagerService extends SystemService
         @Override
         public void onDisplayGroupAdded(int groupId) {
             final boolean isDefaultGroupAdjacent = isDefaultGroupAdjacent(groupId);
+            final boolean startAsleep = !isDefaultGroupAdjacent
+                    && shouldDisplayGroupStartAsleep(groupId);
             final var groupIdsByDisplayIds = mDisplayManagerInternal.getGroupIdsByDisplayIds();
 
             synchronized (mLock) {
@@ -885,7 +887,7 @@ public final class PowerManagerService extends SystemService
                         mPowerGroupWakefulnessChangeListener,
                         mNotifier,
                         mDisplayManagerInternal,
-                        WAKEFULNESS_AWAKE,
+                        startAsleep ? WAKEFULNESS_ASLEEP : WAKEFULNESS_AWAKE,
                         /* ready= */ false,
                         supportsSandman,
                         mClock.uptimeMillis(),
@@ -940,6 +942,30 @@ public final class PowerManagerService extends SystemService
     // made non interactive
     // 2. The power button will sleep only these groups and the default group
     @SuppressWarnings("AndroidFrameworkSystemServerLock")
+    /**
+     * Whether a newly added, non default display group should start asleep: only when
+     * config_secondaryInternalDisplayGroupsStartAsleep is set and the group holds built-in panels
+     * only (for example a flip phone's cover display while the phone is open). Virtual and
+     * external display groups are unaffected.
+     */
+    private boolean shouldDisplayGroupStartAsleep(int groupId) {
+        if (groupId == Display.DEFAULT_DISPLAY_GROUP || !mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_secondaryInternalDisplayGroupsStartAsleep)) {
+            return false;
+        }
+        final int[] displayIds = mDisplayManagerInternal.getDisplayIdsForGroup(groupId);
+        if (displayIds == null || displayIds.length == 0) {
+            return false;
+        }
+        for (int displayId : displayIds) {
+            final DisplayInfo info = mDisplayManagerInternal.getDisplayInfo(displayId);
+            if (info == null || info.type != Display.TYPE_INTERNAL) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private boolean isDefaultGroupAdjacent(int groupId) {
         long flags = mDisplayManagerInternal.getDisplayGroupFlags(groupId);
         return (flags & DisplayGroup.FLAG_DEFAULT_GROUP_ADJACENT) != 0;

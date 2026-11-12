@@ -4606,6 +4606,7 @@
   <java-symbol type="array" name="config_openDeviceStates" />
   <java-symbol type="array" name="config_foldedDeviceStates" />
   <java-symbol type="array" name="config_halfFoldedDeviceStates" />
+  <java-symbol type="bool" name="config_secondaryInternalDisplayGroupsStartAsleep" />
   <java-symbol type="array" name="config_rearDisplayDeviceStates" />
   <java-symbol type="array" name="config_concurrentDisplayDeviceStates" />
   <java-symbol type="bool" name="config_windowManagerHalfFoldAutoRotateOverride" />
