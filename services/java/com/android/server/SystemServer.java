@@ -153,6 +153,7 @@ import com.android.server.bitmapoffload.BitmapOffloadService;
 import com.android.server.blob.BlobStoreManagerService;
 import com.android.server.broadcastradio.BroadcastRadioService;
 import com.android.server.camera.CameraServiceProxy;
+import com.android.server.cli.CliManagerService;
 import com.android.server.clipboard.ClipboardService;
 import com.android.server.companion.CompanionDeviceManagerService;
 import com.android.server.companion.datatransfer.continuity.TaskContinuityManagerService;
@@ -1746,6 +1747,12 @@ public final class SystemServer implements Dumpable {
             t.traceBegin("DeviceStateManagerService");
             mSystemServiceManager.startService(DeviceStateManagerService.class);
             t.traceEnd();
+
+            if (CliManagerService.isSupported()) {
+                t.traceBegin("CliManagerService");
+                mSystemServiceManager.startService(CliManagerService.class);
+                t.traceEnd();
+            }
 
             if (!disableCameraService) {
                 t.traceBegin("StartCameraServiceProxy");

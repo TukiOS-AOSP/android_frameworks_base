@@ -694,6 +694,14 @@
         -->
     </integer-array>
 
+    <!-- Motorola CLI compat: Motorola DEVICE_* value for each device state, indexed by device state
+     identifier (0 closed hall, 1 closed, 2 tent, 3 stand, 4 laptop, 5 open). When a state is out of
+     range, it is derived from the folded / half-folded / open state arrays. -->
+    <integer-array name="config_motoCliDeviceStates" translatable="false" />
+
+    <!-- Motorola CLI compat: CLIManager feature bits (1 << FEATURE_*). Default: device states. -->
+    <integer name="config_motoCliFeatures">1</integer>
+
     <!-- Whether a non default display group made only of built-in panels (for example a flip
      phone's cover display, kept enabled while the phone is open) starts asleep when it is added,
      instead of awake. It then only turns on when explicitly woken. -->

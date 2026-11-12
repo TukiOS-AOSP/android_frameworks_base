@@ -1848,6 +1848,21 @@ public final class SystemServiceRegistry {
                         return new DeviceStateManager();
                     }});
 
+        // Motorola CLI (cover display) compat for moto-core_services.jar
+        registerService(com.motorola.cli.CliManagerCore.SERVICE,
+                com.motorola.cli.CliManagerCore.class,
+                new CachedServiceFetcher<com.motorola.cli.CliManagerCore>() {
+                    @Override
+                    public com.motorola.cli.CliManagerCore createService(ContextImpl ctx) {
+                        IBinder b = ServiceManager.getService(
+                                com.motorola.cli.CliManagerCore.SERVICE);
+                        if (b == null) {
+                            return null;
+                        }
+                        return new com.motorola.cli.CliManagerCore(
+                                com.motorola.cli.ICliManager.Stub.asInterface(b));
+                    }});
+
         registerService(Context.MEDIA_METRICS_SERVICE, MediaMetricsManager.class,
                 new CachedServiceFetcher<MediaMetricsManager>() {
                     @Override

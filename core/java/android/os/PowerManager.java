@@ -249,6 +249,13 @@ public final class PowerManager {
     public static final int ACQUIRE_CAUSES_WAKEUP = 0x10000000;
 
     /**
+     * Wake lock flag: like {@link #ACQUIRE_CAUSES_WAKEUP}, but for the cover (CLI) display.
+     * Same value as Motorola's framework, read by its prebuilt apps through reflection.
+     * @hide
+     */
+    public static final int ACQUIRE_CAUSES_CLI_WAKEUP = 0x01000000;
+
+    /**
      * Wake lock flag: When this wake lock is released, poke the user activity timer
      * so the screen stays on for a little longer.
      * <p>

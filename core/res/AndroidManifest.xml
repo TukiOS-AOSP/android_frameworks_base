@@ -880,6 +880,10 @@
     <!-- Used to launch a common app (FlipFlap) for devices with flip cover. -->
     <protected-broadcast android:name="lineageos.intent.action.LID_STATE_CHANGED" />
 
+    <!-- Motorola CLI compat, sent by CliManagerService -->
+    <protected-broadcast android:name="com.motorola.hardware.action.ACTION_LID_STATE_CHANGE" />
+    <protected-broadcast android:name="com.motorola.hardware.action.ACTION_DEVICE_STATE_CHANGE" />
+
     <!-- Used for long press power torch feature - automatic turn off on timeout -->
     <protected-broadcast android:name="com.android.server.policy.PhoneWindowManager.ACTION_TORCH_OFF" />
 

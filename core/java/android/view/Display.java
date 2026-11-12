@@ -140,6 +140,13 @@ public final class Display {
     public static final int DEFAULT_DISPLAY = 0;
 
     /**
+     * Logical id of the cover (closed lid) display while it is a secondary display.
+     * Read by Motorola's prebuilt apps through reflection.
+     * @hide
+     */
+    public static final int CLI_DISPLAY = 1;
+
+    /**
      * Invalid display id.
      */
     public static final int INVALID_DISPLAY = -1;
