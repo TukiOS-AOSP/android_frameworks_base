@@ -222,6 +222,34 @@ class LogicalDisplayMapper implements DisplayDeviceRepository.Listener {
     private int mNextNonDefaultGroupId = Display.DEFAULT_DISPLAY_GROUP + 1;
     private final DisplayIdProducer mIdProducer = (isDefault) ->
             isDefault ? DEFAULT_DISPLAY : sNextNonDefaultDisplayId++;
+
+    /**
+     * Produces logical display IDs for the static display layouts. A display that is not the
+     * default display gets the same ID in every layout (keyed by its physical address), so a
+     * secondary panel such as a flip phone's cover display keeps a stable ID. IDs are handed out
+     * in the order the layouts list the displays.
+     */
+    private static final class StableLayoutIdProducer implements DisplayIdProducer {
+        private final ArrayMap<DisplayAddress, Integer> mIds = new ArrayMap<>();
+
+        @Override
+        public int getId(boolean isDefault) {
+            return isDefault ? DEFAULT_DISPLAY : sNextNonDefaultDisplayId++;
+        }
+
+        @Override
+        public int getId(boolean isDefault, @NonNull DisplayAddress address) {
+            if (isDefault) {
+                return DEFAULT_DISPLAY;
+            }
+            Integer id = mIds.get(address);
+            if (id == null) {
+                id = sNextNonDefaultDisplayId++;
+                mIds.put(address, id);
+            }
+            return id;
+        }
+    }
     private Layout mCurrentLayout = null;
     private DeviceState mDeviceState = INVALID_DEVICE_STATE;
     private DeviceState mPendingDeviceState = INVALID_DEVICE_STATE;
@@ -242,9 +270,7 @@ class LogicalDisplayMapper implements DisplayDeviceRepository.Listener {
             CopyOnWriteSparseArray<LogicalDisplay.CachedDisplayInfo> displayInfoCache,
             ModeRequestManager modeRequestManager) {
         this(context, foldSettingProvider, repo, listener, syncRoot, handler,
-                new DeviceStateToLayoutMap(
-                        (isDefault) -> isDefault ? DEFAULT_DISPLAY
-                                : sNextNonDefaultDisplayId++, stableEdidsFlag),
+                new DeviceStateToLayoutMap(new StableLayoutIdProducer(), stableEdidsFlag),
                 flags, new DisplayGroupAllocator(context),
                 isDisplayAllowedInTopology, displayInfoCache, modeRequestManager);
     }

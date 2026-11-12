@@ -16,6 +16,9 @@
 
 package com.android.server.display.layout;
 
+import android.annotation.NonNull;
+import android.view.DisplayAddress;
+
 /**
  * Interface for producing logical display ids.
  */
@@ -27,4 +30,15 @@ public interface DisplayIdProducer {
      * @return the next unique logical display Id.
      */
     int getId(boolean isDefault);
+
+    /**
+     * Generates a display ID for the display at the given address. By default the same as
+     * {@link #getId(boolean)}; producers may return a stable ID per address instead.
+     * @param isDefault if requested display is the default display.
+     * @param address the physical address of the display.
+     * @return the logical display Id.
+     */
+    default int getId(boolean isDefault, @NonNull DisplayAddress address) {
+        return getId(isDefault);
+    }
 }

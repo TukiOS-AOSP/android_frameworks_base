@@ -156,7 +156,7 @@ public class Layout {
         // Note that the logical display ID is saved into the layout, so when switching between
         // different layouts, a logical display can be destroyed and later recreated with the
         // same logical display ID.
-        final int logicalDisplayId = idProducer.getId(isDefault);
+        final int logicalDisplayId = idProducer.getId(isDefault, address);
 
         final Display display = new Display(address, logicalDisplayId, isEnabled, displayGroupName,
                 brightnessThrottlingMapId, position, leadDisplayAddress, refreshRateZoneId,
