@@ -1878,6 +1878,9 @@ public final class PowerManagerService extends SystemService
     private void acquireWakeLockInternal(IBinder lock, int displayId, int flags, String tag,
             String packageName, WorkSource ws, String historyTag, int uid, int pid,
             @Nullable IWakeLockCallback callback) {
+        if ((flags & PowerManager.ACQUIRE_CAUSES_CLI_WAKEUP) != 0) {
+            displayId = getCliWakeLockDisplayId(displayId);
+        }
         if (displayId != Display.INVALID_DISPLAY) {
             if (!mSystemReady) {
                 Slog.wtf(TAG, "Tried to acquire wake lock for display " + displayId
@@ -2011,6 +2014,50 @@ public final class PowerManagerService extends SystemService
 
     @GuardedBy("mLock")
     @RequiresPermission(value = android.Manifest.permission.TURN_SCREEN_ON, conditional = true)
+    /**
+     * Motorola CLI compat: a wake lock with {@link PowerManager#ACQUIRE_CAUSES_CLI_WAKEUP} is
+     * meant for the cover (CLI) display, but PowerManager#newWakeLock(int, String) ties it to the
+     * caller's display. Target {@link Display#CLI_DISPLAY} instead while that display exists, so
+     * the lock wakes and holds the cover's display group.
+     */
+    private int getCliWakeLockDisplayId(int displayId) {
+        if (!mSystemReady || mDisplayManagerInternal == null) {
+            return displayId;
+        }
+        return mDisplayManagerInternal.getDisplayInfo(Display.CLI_DISPLAY) != null
+                ? Display.CLI_DISPLAY : displayId;
+    }
+
+    /**
+     * When a CLI wake lock that held a secondary display group goes away, put that group back to
+     * sleep right away instead of waiting for its screen timeout, unless another screen wake lock
+     * still holds it.
+     */
+    @GuardedBy("mLock")
+    private void sleepCliGroupIfUnusedLocked(WakeLock released) {
+        if ((released.mFlags & PowerManager.ACQUIRE_CAUSES_CLI_WAKEUP) == 0
+                || !isScreenLock(released)) {
+            return;
+        }
+        final Integer groupId = released.getPowerGroupId();
+        if (groupId == null || groupId == Display.INVALID_DISPLAY_GROUP) {
+            return;
+        }
+        final PowerGroup powerGroup = mPowerGroups.get(groupId);
+        if (powerGroup == null || powerGroup.isDefaultOrAdjacentGroup()) {
+            return;
+        }
+        for (int i = 0; i < mWakeLocks.size(); i++) {
+            final WakeLock wakeLock = mWakeLocks.get(i);
+            if (wakeLock != released && !wakeLock.mDisabled && isScreenLock(wakeLock)
+                    && groupId.equals(wakeLock.getPowerGroupId())) {
+                return;
+            }
+        }
+        sleepPowerGroupLocked(powerGroup, mClock.uptimeMillis(),
+                PowerManager.GO_TO_SLEEP_REASON_APPLICATION, released.mOwnerUid);
+    }
+
     private void applyWakeLockFlagsOnAcquireLocked(WakeLock wakeLock) {
         if ((wakeLock.mFlags & PowerManager.ACQUIRE_CAUSES_WAKEUP) != 0
                 && isScreenLock(wakeLock)) {
@@ -2082,6 +2129,7 @@ public final class PowerManagerService extends SystemService
                 mRequestWaitForNegativeProximity = true;
             }
 
+            sleepCliGroupIfUnusedLocked(wakeLock);
             wakeLock.unlinkToDeath();
             wakeLock.setDisabled(true);
             removeWakeLockLocked(wakeLock, index);
@@ -2178,6 +2226,7 @@ public final class PowerManagerService extends SystemService
 
     @GuardedBy("mLock")
     private void removeWakeLockDeathLocked(WakeLock wakeLock, int index) {
+        sleepCliGroupIfUnusedLocked(wakeLock);
         removeFrozenStateChangeCallbacksLocked(wakeLock);
         removeWakeLockNoUpdateLocked(wakeLock, index, RELEASE_REASON_WAKE_LOCK_DEATH);
         updatePowerStateLocked();
