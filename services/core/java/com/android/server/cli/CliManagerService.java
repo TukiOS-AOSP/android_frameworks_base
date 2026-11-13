@@ -60,7 +60,7 @@ public final class CliManagerService extends SystemService {
     private static final int LID_CLOSED = 0;
     private static final int LID_OPEN = 1;
 
-    private static final int CLITRANSITION_NEVER = 0;
+    private static final int CLITRANSITION_ALWAYS = 2;
 
     private static final String ACTION_LID_STATE_CHANGE =
             "com.motorola.hardware.action.ACTION_LID_STATE_CHANGE";
@@ -83,6 +83,7 @@ public final class CliManagerService extends SystemService {
     private final int[] mHalfFoldedStates;
     private final int[] mFoldedStates;
     private final int mFeatures;
+    private final Rect mCliDisplayCutout;
 
     // No snippet (small cover window) mode changes are reported yet; kept so callers can register.
     private final RemoteCallbackList<ISnippetCliObserver> mSnippetObservers =
@@ -107,6 +108,9 @@ public final class CliManagerService extends SystemService {
                 context.getResources().getIntArray(R.array.config_halfFoldedDeviceStates);
         mFoldedStates = context.getResources().getIntArray(R.array.config_foldedDeviceStates);
         mFeatures = context.getResources().getInteger(R.integer.config_motoCliFeatures);
+        final int[] cutout = context.getResources().getIntArray(R.array.config_motoCliDisplayCutout);
+        mCliDisplayCutout = cutout.length == 4
+                ? new Rect(cutout[0], cutout[1], cutout[2], cutout[3]) : new Rect();
     }
 
     public static boolean isSupported() {
@@ -157,16 +161,17 @@ public final class CliManagerService extends SystemService {
     }
 
     /**
-     * Motorola's LID_CLOSED tells its apps to move to the CLI display (Display.CLI_DISPLAY).
-     * On Motorola's framework the cover is always that secondary display. Here the panels swap
-     * when folded: the cover becomes the default display, and display CLI_DISPLAY only exists
-     * while the phone is open. Reporting LID_CLOSED would make Moto Camera launch onto a display
-     * that does not exist (crash) or relaunch itself forever, so report the lid as open. Apps then
-     * stay on the default display when folded, like every other app; the posture is still
-     * reported through getDeviceState() and ACTION_DEVICE_STATE_CHANGE.
+     * The lid is closed whenever the cover is the primary display: Moto Camera then runs its
+     * cover (CLI) interface. Motorola's framework keeps the cover as display CLI_DISPLAY at all
+     * times; here the panels swap and the cover is the default display while folded, which the
+     * Moto Camera build on LineageOS is patched to handle.
      */
     private int toLidState(int state) {
-        return LID_OPEN;
+        if (ArrayUtils.contains(mOpenStates, state)
+                || ArrayUtils.contains(mHalfFoldedStates, state)) {
+            return LID_OPEN;
+        }
+        return LID_CLOSED;
     }
 
     private void handleDeviceState(int state) {
@@ -248,14 +253,15 @@ public final class CliManagerService extends SystemService {
 
         @Override
         public Rect getCliDisplayCutout() {
-            return new Rect();
+            return new Rect(mCliDisplayCutout);
         }
 
         @Override
         public int queryCliTransitionAsUser(String packageName, int userId) {
             synchronized (mLock) {
                 Integer t = mTransitions.get(userId + ":" + packageName);
-                return t != null ? t : CLITRANSITION_NEVER;
+                // Keep apps (Moto Camera) running on the cover when the phone folds.
+                return t != null ? t : CLITRANSITION_ALWAYS;
             }
         }
 
