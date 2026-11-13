@@ -349,6 +349,12 @@ constructor(
     override fun onInit() {
         variableDateViewControllerFactory.create(date as VariableDateView).init()
 
+        // The header clock padding comes from updateQQSPaddings. Without this, the clock puts
+        // back the status bar padding on density changes (folding or unfolding), which pushes
+        // it away from the date.
+        clock.setShouldApplyPadding(false)
+        updateQQSPaddings()
+
         val fgColor = getFgColor()
         val bgColor = getBgColor()
 
